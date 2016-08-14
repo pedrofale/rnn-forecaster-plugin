@@ -291,7 +291,7 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
         int classIndex = 0;
         int modelClassIndex = model.getHeader().classIndex();
         for (int i = 0; i < inputMeta.getFieldNames().length; i++) {
-            if (m_mappingIndexes[i] == modelClassIndex)
+            if (mappingIndexes[i] == modelClassIndex)
                 classIndex = i;
             if (batch.attribute(i).isDate())
                 dateIndex = i;
@@ -311,7 +311,7 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
         List<List<NumericPrediction>>  forecast = model.forecast(stepsToForecast);
 
         // Output rows
-        Object[][] result = new Object[stepsToForecast + inputRows.size()][model.getHeader().numClasses() + 1]; // date
+        Object[][] result = new Object[stepsToForecast + inputRows.size()][model.getHeader().numAttributes()];
 
         // First copy the input data to the new result...
         for (int i = 0; i < inputRows.size(); i++) {
@@ -319,7 +319,7 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
         }
         // Now generate prediction rows
         for (int i = 0; i < stepsToForecast; i++) {
-            Object[] resultRow = RowDataUtil.resizeArray(inputRows.get(0), outputMeta.size());
+            result[i] = RowDataUtil.resizeArray(inputRows.get(0), outputMeta.size());
             List<NumericPrediction> prediction = forecast.get(i);
 
             Double predouble = new Double(prediction.get(0).predicted());
