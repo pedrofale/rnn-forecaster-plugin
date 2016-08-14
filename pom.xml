@@ -83,10 +83,10 @@
             <Bundle-Version>${project.version}</Bundle-Version>
             <Export-Package>org.pentaho.di.plugins.dl4j</Export-Package>
             <Import-Package>
-              org.apache.commons.vfs2, org.osgi.service.blueprint, org.eclipse.swt.*, org.pentaho.di.*, org.pentaho.di.core.*, org.pentaho.di.ui.*, org.pentaho.vfs.ui, org.w3c.dom, !weka.classifiers.evaluation, !weka.classifiers.timeseries, !weka.clusterers, !weka.core, !weka.core.pmml, !weka.core.xml, !weka.gui
+              org.apache.commons.vfs2, org.osgi.service.blueprint, org.eclipse.swt.*, org.pentaho.di.*, org.pentaho.di.core.*, org.pentaho.di.ui.*, org.pentaho.vfs.ui, org.w3c.dom, !weka.classifiers.evaluation, !weka.classifiers.timeseries, !weka.clusterers, !weka.core, !weka.core.pmml, !weka.core.xml, !weka.gui, !weka.filters.supervised.attribute
             </Import-Package>
             <Embed-Dependency>
-              weka.classifiers.evaluation, weka.classifiers.timeseries, weka.clusterers, weka.core, weka.core.pmml, weka.core.xml, weka.gui
+              weka.classifiers.evaluation, weka.classifiers.timeseries, weka.clusterers, weka.core, weka.core.pmml, weka.core.xml, weka.gui, weka.filters.supervised.attribute
             </Embed-Dependency>
           </instructions>
         </configuration>

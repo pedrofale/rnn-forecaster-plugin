@@ -5,10 +5,12 @@ package org.pentaho.di.plugins.dl4j;
  */
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.List;
 
 import weka.classifiers.evaluation.NumericPrediction;
 import weka.classifiers.timeseries.WekaForecaster;
+import weka.core.Instance;
 import weka.core.Instances;
 
 /**
@@ -82,6 +84,9 @@ public abstract class RNNForecastingModel implements Serializable {
      */
     public abstract void primeForecaster(Instances batch)
             throws Exception;
+
+    public abstract List<String> getForecastDates(int stepsToForecast,
+                                                         Instance lastInst, int dateIndex) throws Exception;
 
     /**
      * Forecasting method

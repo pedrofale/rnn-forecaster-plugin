@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleException;
+import org.pentaho.di.core.row.ValueMeta;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransMeta;
@@ -106,7 +107,7 @@ public class RNNForecasting extends BaseStep implements StepInterface {
 
         Object[] r = getRow();
 
-        // No more rows to be read -- make forecast
+        // No more rows to be read -- make forecast here
         if (r == null) {
             try {
                 outputBatchRows();
@@ -165,8 +166,8 @@ public class RNNForecasting extends BaseStep implements StepInterface {
 
             if (!Const.isEmpty(m_meta.getStepsToForecast())) {
                 try {
-                    String bss = environmentSubstitute(m_meta.getStepsToForecast());
-                    m_batchScoringSize = Integer.parseInt(bss);
+                    String stf = environmentSubstitute(m_meta.getStepsToForecast());
+                    m_batchScoringSize = Integer.parseInt(stf);
                 } catch (NumberFormatException ex) {
                     String modelPreferred = environmentSubstitute(((BatchPredictor) m_meta
                             .getModel().getModel()).getBatchSize());
@@ -197,19 +198,14 @@ public class RNNForecasting extends BaseStep implements StepInterface {
 
         } // end (if first)
 
-        // Make prediction for row using model
-        try {
-            try {
-                // add current row to batch
-                m_batch.add(r);
 
-            } catch (Exception ex) {
-                throw new KettleException(BaseMessages.getString(RNNForecastingMeta.PKG,
-                        "RNNForecasting.Error.ErrorGettingBatchPredictions"), ex); //$NON-NLS-1$
-            }
+        try {
+            // add current row to batch
+            m_batch.add(r);
+
         } catch (Exception ex) {
             throw new KettleException(BaseMessages.getString(RNNForecastingMeta.PKG,
-                    "RNNForecasting.Error.UnableToMakePredictionForRow", getLinesRead()), ex); //$NON-NLS-1$
+                    "RNNForecasting.Error.UnableToAddRow", getLinesRead()), ex); //$NON-NLS-1$
         }
 
         if (log.isRowLevel()) {
@@ -226,6 +222,7 @@ public class RNNForecasting extends BaseStep implements StepInterface {
         // get predictions for the batch
         Object[][] outputRows = m_data.generateForecast(getInputRowMeta(),
                 m_data.getOutputRowMeta(), m_batch, m_meta);
+
 
         if (log.isDetailed()) {
             logDetailed(BaseMessages.getString(RNNForecastingMeta.PKG,

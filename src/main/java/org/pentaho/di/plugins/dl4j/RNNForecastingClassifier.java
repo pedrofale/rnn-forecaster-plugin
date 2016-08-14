@@ -6,8 +6,13 @@ package org.pentaho.di.plugins.dl4j;
 
 import weka.classifiers.evaluation.NumericPrediction;
 import weka.classifiers.timeseries.WekaForecaster;
+import weka.core.Attribute;
+import weka.core.Instance;
 import weka.core.Instances;
+import weka.filters.supervised.attribute.TSLagMaker;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -59,6 +64,23 @@ class RNNForecastingClassifier extends RNNForecastingModel {
     public void primeForecaster(Instances batch) throws Exception {
         m_model.primeForecaster(batch);
     }
+
+    public List<String> getForecastDates(int stepsToForecast,
+                                         Instance lastInst, int dateIndex) throws Exception {
+
+        List<String> dates = new ArrayList<>(stepsToForecast);
+        TSLagMaker tsLagMaker = m_model.getTSLagMaker();
+        Attribute dateAtt = lastInst.attribute(dateIndex);
+        double lastDate = tsLagMaker.getCurrentTimeStampValue();
+
+        for (int i = 0; i < stepsToForecast; i++) {
+            lastDate = tsLagMaker.advanceSuppliedTimeValue(lastDate);
+            String date = dateAtt.formatDate(lastDate);
+            dates.add(date);
+        }
+        return dates;
+    }
+
 
     /**
      * Return a classification (number for regression problems

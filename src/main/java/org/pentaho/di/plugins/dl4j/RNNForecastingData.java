@@ -5,6 +5,7 @@ package org.pentaho.di.plugins.dl4j;
  */
 
 import java.io.*;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
@@ -15,6 +16,7 @@ import org.pentaho.di.core.exception.KettleStepException;
 import org.pentaho.di.core.logging.LogChannelInterface;
 import org.pentaho.di.core.row.RowDataUtil;
 import org.pentaho.di.core.row.RowMetaInterface;
+import org.pentaho.di.core.row.ValueMeta;
 import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.core.variables.VariableSpace;
 import org.pentaho.di.core.vfs.KettleVFS;
@@ -32,6 +34,7 @@ import weka.core.Utils;
 import weka.core.pmml.PMMLFactory;
 import weka.core.pmml.PMMLModel;
 import weka.core.xml.XStream;
+import weka.filters.supervised.attribute.TSLagMaker;
 
 import javax.swing.*;
 
@@ -272,10 +275,8 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
                                           RowMetaInterface outputMeta, List<Object[]> inputRows,
                                           RNNForecastingMeta meta) throws Exception {
         int[] mappingIndexes = m_mappingIndexes;
-        RNNForecastingModel model = getModel(); // copy of the model for this copy of
-        // the step
+        RNNForecastingModel model = getModel(); // copy of the model for this copy of the step
         model.getHeader().setClassIndex(0);
-        Attribute classAtt = model.getHeader().classAttribute();
 
         Instances batch = new Instances(model.getHeader(), inputRows.size());
         // loop through rows and make each one an Instance object, part of Instances
@@ -286,21 +287,50 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
         }
         model.primeForecaster(batch);
 
+        int dateIndex = 0;
+        int classIndex = 0;
+        int modelClassIndex = model.getHeader().classIndex();
+        for (int i = 0; i < inputMeta.getFieldNames().length; i++) {
+            if (m_mappingIndexes[i] == modelClassIndex)
+                classIndex = i;
+            if (batch.attribute(i).isDate())
+                dateIndex = i;
+        }
+
+        int modelDateIndex = 0;
+        for (int i = 0 ; i < model.getHeader().numAttributes(); i++) {
+            if (model.getHeader().attribute(i).isDate()) {
+                modelDateIndex = i;
+                break;
+            }
+        }
+
         int stepsToForecast = new Integer(meta.getStepsToForecast());
+
+        List<String> dates = model.getForecastDates(stepsToForecast, batch.lastInstance(), modelDateIndex);
         List<List<NumericPrediction>>  forecast = model.forecast(stepsToForecast);
 
-        Object[][] result = new Object[stepsToForecast][];
-        for (int i = 0; i < stepsToForecast; i++) {
-            // First copy the input data to the new result...
-            Object[] resultRow = RowDataUtil.resizeArray(inputRows.get(i), outputMeta.size());
-            int index = inputMeta.size();
+        // Output rows
+        Object[][] result = new Object[stepsToForecast + inputRows.size()][model.getHeader().numClasses() + 1]; // date
 
+        // First copy the input data to the new result...
+        for (int i = 0; i < inputRows.size(); i++) {
+            result[i] = RowDataUtil.resizeArray(inputRows.get(i), outputMeta.size());
+        }
+        // Now generate prediction rows
+        for (int i = 0; i < stepsToForecast; i++) {
+            Object[] resultRow = RowDataUtil.resizeArray(inputRows.get(0), outputMeta.size());
             List<NumericPrediction> prediction = forecast.get(i);
 
-            Double newVal = new Double(prediction.get(0).actual());
-            resultRow[index++] = newVal;
+            Double predouble = new Double(prediction.get(0).predicted());
+            String pred = predouble.toString();
 
-            result[i] = resultRow;
+            ValueMetaInterface predVM = new ValueMeta(model.getHeader().classAttribute().name(),
+                    ValueMetaInterface.TYPE_STRING);
+            ValueMetaInterface dateVM = new ValueMeta(model.getHeader().attribute(modelDateIndex).name(),
+                    ValueMetaInterface.TYPE_STRING);
+            result[i + inputRows.size()][classIndex] = predVM.convertToBinaryStringStorageType(pred);
+            result[i + inputRows.size()][dateIndex] = dateVM.convertToBinaryStringStorageType(dates.get(i));
         }
 
         return result;
@@ -501,6 +531,11 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
                     }
 
                     switch (temp.type()) {
+                        case Attribute.DATE: {
+                            String s = tempField.getString(inputVal);
+                            m_vals[i] = temp.parseDate(s);
+                            break;
+                        }
                         case Attribute.NUMERIC: {
                             if (fieldType == ValueMetaInterface.TYPE_BOOLEAN) {
                                 Boolean b = tempField.getBoolean(inputVal);

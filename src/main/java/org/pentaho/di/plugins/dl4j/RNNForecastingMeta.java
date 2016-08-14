@@ -20,11 +20,13 @@ import org.pentaho.di.core.Counter;
 import org.pentaho.di.core.annotations.Step;
 import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.exception.KettleException;
+import org.pentaho.di.core.exception.KettlePluginException;
 import org.pentaho.di.core.exception.KettleStepException;
 import org.pentaho.di.core.exception.KettleXMLException;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMeta;
 import org.pentaho.di.core.row.ValueMetaInterface;
+import org.pentaho.di.core.row.value.ValueMetaFactory;
 import org.pentaho.di.core.variables.VariableSpace;
 import org.pentaho.di.core.variables.Variables;
 import org.pentaho.di.core.xml.XMLHandler;
@@ -464,7 +466,7 @@ public class RNNForecastingMeta extends BaseStepMeta implements StepMetaInterfac
     @Override
     public void getFields(RowMetaInterface row, String origin,
                           RowMetaInterface[] info, StepMeta nextStep, VariableSpace space)
-            throws KettleStepException {
+            throws KettleStepException{
 
         if (m_model == null && !Const.isEmpty(getSerializedModelFileName())) {
             // see if we can load from a file.
@@ -487,20 +489,6 @@ public class RNNForecastingMeta extends BaseStepMeta implements StepMetaInterfac
             }
         }
 
-        if (m_model != null) {
-            Instances header = m_model.getHeader();
-            String classAttName = null;
-            header.setClassIndex(0);
-            classAttName = header.classAttribute().name();
-
-            int valueType = ValueMetaInterface.TYPE_NUMBER;
-
-            ValueMetaInterface newVM = new ValueMeta(classAttName + "_predicted", //$NON-NLS-1$
-                    valueType);
-            newVM.setOrigin(origin);
-            row.addValueMeta(newVM);
-
-        }
     }
 
     /**

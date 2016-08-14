@@ -534,18 +534,18 @@ public class RNNForecastingDialog extends BaseStepDialog implements
                 for (int i = 0; i < header.numAttributes(); i++) {
                     Attribute temp = header.attribute(i);
                     String attName = "("; //$NON-NLS-1$
-                    if (temp.isNumeric()) {
+                    if (temp.isDate()) {
                         attName += BaseMessages.getString(RNNForecastingMeta.PKG,
-                                "RNNForecastingDialog.Mapping.Numeric") + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+                                "RNNForecastingDialog.Mapping.Date") + ")"; //$NON-NLS-1$ //$NON-NLS-2$
                     } else if (temp.isNominal()) {
                         attName += BaseMessages.getString(RNNForecastingMeta.PKG,
                                 "RNNForecastingDialog.Mapping.Nominal") + ")"; //$NON-NLS-1$ //$NON-NLS-2$
                     } else if (temp.isString()) {
                         attName += BaseMessages.getString(RNNForecastingMeta.PKG,
                                 "RNNForecastingDialog.Mapping.String") + ")"; //$NON-NLS-1$ //$NON-NLS-2$
-                    } else if (temp.isDate()) {
+                    } else if (temp.isNumeric()) {
                         attName += BaseMessages.getString(RNNForecastingMeta.PKG,
-                                "RNNForecastingDialog.Mapping.Date") + ")";
+                                "RNNForecastingDialog.Mapping.Numeric") + ")";
                     }
                     attName += (" " + temp.name()); //$NON-NLS-1$
 
