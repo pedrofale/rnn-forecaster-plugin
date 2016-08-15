@@ -5,10 +5,7 @@ package org.pentaho.di.plugins.dl4j;
  */
 
 import java.io.*;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Vector;
+import java.util.*;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.vfs2.FileObject;
@@ -287,12 +284,10 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
         }
         model.primeForecaster(batch);
 
+        int[] targetIndexes = getTargetColumns(model, inputMeta);
+
         int dateIndex = 0;
-        int classIndex = 0;
-        int modelClassIndex = model.getHeader().classIndex();
         for (int i = 0; i < inputMeta.getFieldNames().length; i++) {
-            if (mappingIndexes[i] == modelClassIndex)
-                classIndex = i;
             if (batch.attribute(i).isDate())
                 dateIndex = i;
         }
@@ -308,32 +303,59 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
         int stepsToForecast = new Integer(meta.getStepsToForecast());
 
         List<String> dates = model.getForecastDates(stepsToForecast, batch.lastInstance(), modelDateIndex);
-        List<List<NumericPrediction>>  forecast = model.forecast(stepsToForecast);
+        List<List<NumericPrediction>> forecast = model.forecast(stepsToForecast);
 
         // Output rows
         Object[][] result = new Object[stepsToForecast + inputRows.size()][model.getHeader().numAttributes()];
 
-        // First copy the input data to the new result...
+        // First copy the input data to the output rows
         for (int i = 0; i < inputRows.size(); i++) {
             result[i] = RowDataUtil.resizeArray(inputRows.get(i), outputMeta.size());
         }
         // Now generate prediction rows
         for (int i = 0; i < stepsToForecast; i++) {
-            result[i] = RowDataUtil.resizeArray(inputRows.get(0), outputMeta.size());
+            result[i + inputRows.size()] = RowDataUtil.allocateRowData(outputMeta.size());
+            ValueMetaInterface newVM = new ValueMeta("string", ValueMetaInterface.TYPE_STRING);
+
             List<NumericPrediction> prediction = forecast.get(i);
 
-            Double predouble = new Double(prediction.get(0).predicted());
-            String pred = predouble.toString();
-
-            ValueMetaInterface predVM = new ValueMeta(model.getHeader().classAttribute().name(),
-                    ValueMetaInterface.TYPE_STRING);
-            ValueMetaInterface dateVM = new ValueMeta(model.getHeader().attribute(modelDateIndex).name(),
-                    ValueMetaInterface.TYPE_STRING);
-            result[i + inputRows.size()][classIndex] = predVM.convertToBinaryStringStorageType(pred);
-            result[i + inputRows.size()][dateIndex] = dateVM.convertToBinaryStringStorageType(dates.get(i));
+            double[] predPerClass = classPredictions(prediction);
+            List<Double> predsDouble = new ArrayList<>(predPerClass.length);
+            List<String> preds = new ArrayList<>(predPerClass.length);
+            for (int j = 0; j < predPerClass.length; j++) {
+                predsDouble.add(predPerClass[j]);
+                preds.add(predsDouble.get(j).toString());
+                result[i + inputRows.size()][targetIndexes[j]] = newVM.convertToBinaryStringStorageType(preds.get(j));
+            }
+            result[i + inputRows.size()][dateIndex] = newVM.convertToBinaryStringStorageType(dates.get(i));
         }
 
         return result;
+    }
+
+    public int[] getTargetColumns(RNNForecastingModel model, RowMetaInterface inputMeta) {
+        List<String> targetFieldNames = model.getTargetFieldNames();
+        int[] targetIndexes = new int[targetFieldNames.size()];
+        String[] fieldNames = inputMeta.getFieldNames();
+        for (int i = 0; i < targetFieldNames.size(); i++) {
+            for (int j = 0; j < fieldNames.length; j++) {
+                if (targetFieldNames.get(i).equalsIgnoreCase(fieldNames[j])) {
+                    targetIndexes[i] = j;
+                }
+            }
+        }
+        return targetIndexes;
+    }
+
+    private double[] classPredictions(List<NumericPrediction> predAtStep) {
+        double[] predPerClass = new double[predAtStep.size()];
+
+        for (int i = 0; i < predAtStep.size(); i++) {
+            NumericPrediction predAtTarget = predAtStep.get(i);
+            predPerClass[i] = predAtTarget.predicted();
+        }
+
+        return predPerClass;
     }
 
 //    public Object[][] generatePredictions(RowMetaInterface inputMeta,

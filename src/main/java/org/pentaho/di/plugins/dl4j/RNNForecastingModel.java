@@ -75,6 +75,8 @@ public abstract class RNNForecastingModel implements Serializable {
      */
     public abstract Object getModel();
 
+    public abstract List<String> getTargetFieldNames();
+
     /**
      * Prime the forecaster with the input data
      *

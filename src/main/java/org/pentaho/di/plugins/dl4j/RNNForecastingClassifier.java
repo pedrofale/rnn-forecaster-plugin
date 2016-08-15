@@ -81,6 +81,17 @@ class RNNForecastingClassifier extends RNNForecastingModel {
         return dates;
     }
 
+    public List<String> getTargetFieldNames() {
+        String[] strArr = m_model.getOptions();
+        String[] targetStrs = strArr[1].split(",");
+        List<String> targetFields = new ArrayList<>(targetStrs.length);
+        for (int i = 0; i < targetStrs.length; i++) {
+            targetFields.add(targetStrs[i]);
+        }
+
+        return targetFields;
+    }
+
 
     /**
      * Return a classification (number for regression problems
