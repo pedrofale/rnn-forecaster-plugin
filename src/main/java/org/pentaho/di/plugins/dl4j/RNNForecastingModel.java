@@ -94,11 +94,23 @@ public abstract class RNNForecastingModel implements Serializable {
      * Forecasting method
      *
      * @param numOfSteps the number of predictions to be made
+     * @param overlay overlay input data to be used if model was trained with overlay attributes
      * @return prediction for each future time step
      * @throws Exception if a problem occurs
      */
-    public abstract List<List<NumericPrediction>> forecast(int numOfSteps)
+    public abstract List<List<NumericPrediction>> forecast(int numOfSteps, Instances overlay)
             throws Exception;
+
+
+    /**
+     * Return a classification (number for regression problems
+     * or index of a class value for classification problems).
+     *
+     * @param numStepsToForecast number of steps to predict beyond training data
+     * @return the predictions
+     * @exception Exception if an error occurs
+     */
+    public abstract List<List<NumericPrediction>> forecast(int numStepsToForecast) throws Exception;
 
     /**
      * Static factory method to create an instance of an appropriate subclass of

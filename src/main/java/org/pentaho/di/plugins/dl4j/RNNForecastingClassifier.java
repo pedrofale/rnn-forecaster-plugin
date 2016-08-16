@@ -6,11 +6,13 @@ package org.pentaho.di.plugins.dl4j;
 
 import weka.classifiers.evaluation.NumericPrediction;
 import weka.classifiers.timeseries.WekaForecaster;
+import weka.classifiers.timeseries.core.OverlayForecaster;
 import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.supervised.attribute.TSLagMaker;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -50,9 +52,10 @@ class RNNForecastingClassifier extends RNNForecastingModel {
      *
      * @return the Weka model as an object
      */
-    public Object getModel() {
+    public WekaForecaster getModel() {
         return m_model;
     }
+
 
     /**
      * Prime the forecaster with the input data
@@ -92,6 +95,18 @@ class RNNForecastingClassifier extends RNNForecastingModel {
         return targetFields;
     }
 
+    /**
+     * Return a classification (number for regression problems
+     * or index of a class value for classification problems).
+     *
+     * @param numStepsToForecast number of steps to predict beyond training data
+     * @param overlay overlay input data to be used if model was trained with overlay attributes
+     * @return the predictions
+     * @exception Exception if an error occurs
+     */
+    public List<List<NumericPrediction>> forecast(int numStepsToForecast, Instances overlay) throws Exception {
+        return m_model.forecast(numStepsToForecast, overlay);
+    }
 
     /**
      * Return a classification (number for regression problems
