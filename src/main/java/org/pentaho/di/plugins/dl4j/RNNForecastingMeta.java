@@ -49,7 +49,8 @@ import weka.core.SerializedObject;
 /**
  * Contains the meta data for the RNNForecasting step.
  *
- * @author Mark Hall (mhall{[at]}pentaho{[dot]}org)
+ * @author Pedro Ferreira (pferreira{[at]}pentaho{[dot]}org)
+ * @version 1.0
  */
 @Step(id = "RNNForecasting", image = "WEKAS.svg", name = "RNN Forecasting",
         description = "Appends predictions from a pre-built RNN model in Weka", categoryDescription = "Data Mining",
@@ -69,10 +70,13 @@ public class RNNForecastingMeta extends BaseStepMeta implements StepMetaInterfac
     private String m_stepsToForecast;
     public static final int DEFAULT_steps_to_forecast = 1;
 
+    /**
+     *  Whether to clear previous RNN state
+     */
+    private boolean m_clearPrevState;
+
     /** Holds the actual Weka model (forecaster) */
     private RNNForecastingModel m_model;
-
-
 
     /**
      * Set the number of time steps to forecast
@@ -108,6 +112,20 @@ public class RNNForecastingMeta extends BaseStepMeta implements StepMetaInterfac
      */
     public String getSerializedModelFileName() {
         return m_modelFileName;
+    }
+
+    /**
+     * Set whether to clear previous RNN state or not
+     */
+    public void setClearPreviousState(boolean clearPreviousState) {
+        m_clearPrevState = clearPreviousState;
+    }
+
+    /**
+     * Set whether to clear previous RNN state or not
+     */
+    public boolean getClearPreviousState() {
+        return m_clearPrevState;
     }
 
     /**

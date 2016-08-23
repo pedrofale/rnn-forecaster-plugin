@@ -58,9 +58,9 @@
       <version>3.8.0</version>
     </dependency>
     <dependency>
-      <groupId>nz.ac.waikato.cms.weka</groupId>
-      <artifactId>timeseriesForecasting</artifactId>
-      <version>1.0.20</version>
+      <groupId>pedrofale</groupId>
+      <artifactId>timeSeriesForecasting</artifactId>
+      <version>1.0</version>
     </dependency>
     <dependency>
         <groupId>org.yaml</groupId>

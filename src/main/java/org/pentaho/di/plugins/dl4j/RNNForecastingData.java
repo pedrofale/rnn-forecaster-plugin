@@ -39,7 +39,8 @@ import javax.swing.*;
 /**
  * Holds temporary data and has routines for loading serialized models.
  *
- * @author Mark Hall (mhall{[at]}pentaho{[dot]}org)
+ * @author Pedro Ferreira (pferreira{[at]}pentaho{[dot]}org)
+ * @version 1.0
  */
 public class RNNForecastingData extends BaseStepData implements StepDataInterface {
 
@@ -173,6 +174,8 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
 
         RNNForecastingModel wfm = RNNForecastingModel.createScorer(model);
         wfm.setHeader(header);
+        wfm.loadBaseModel();
+        wfm.loadSerializedState();
 
         return wfm;
     }
@@ -290,8 +293,6 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
             }
         }
 
-        model.primeForecaster(primeData);
-
         int[] targetIndexes = getTargetColumns(model, inputMeta);
         int dateIndex = 0;
         for (int i = 0; i < inputMeta.getFieldNames().length; i++) {
@@ -306,6 +307,13 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
                 break;
             }
         }
+
+        if (meta.getClearPreviousState()) {
+            model.clearPreviousState();
+        }
+
+        // Prime forecaster with historical enough data to create lagged variables
+        model.primeForecaster(primeData);
 
         // Generate output rows. Operations differ if we are using overlay data
         Object[][] result = null;
@@ -324,8 +332,10 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
                                           int dateIndex, int modelDateIndex, int[] targetIndexes) throws Exception {
 
         int stepsToForecast = new Integer(meta.getStepsToForecast());
-        List<List<NumericPrediction>> forecast = model.forecast(stepsToForecast);
+
+        // dates must be generated *before* forecasting
         List<String> dates = model.getForecastDates(stepsToForecast, primeData.lastInstance(), modelDateIndex);
+        List<List<NumericPrediction>> forecast = model.forecast(stepsToForecast);
 
         // Output rows
         Object[][] result = new Object[stepsToForecast + primeData.numInstances()][model.getHeader().numAttributes()];

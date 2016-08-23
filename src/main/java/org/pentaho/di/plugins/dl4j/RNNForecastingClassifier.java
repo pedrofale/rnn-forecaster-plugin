@@ -7,11 +7,13 @@ package org.pentaho.di.plugins.dl4j;
 import weka.classifiers.evaluation.NumericPrediction;
 import weka.classifiers.timeseries.WekaForecaster;
 import weka.classifiers.timeseries.core.OverlayForecaster;
+import weka.classifiers.timeseries.core.StateDependentPredictor;
 import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.supervised.attribute.TSLagMaker;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Date;
@@ -56,6 +58,20 @@ class RNNForecastingClassifier extends RNNForecastingModel {
         return m_model;
     }
 
+    /**
+     * Set the base model
+     *
+     */
+    public void loadBaseModel() throws IOException {
+        m_model.loadBaseModel();
+    }
+
+    /**
+     * Set previously serialized RNN state
+     */
+    public void loadSerializedState() throws Exception {
+        m_model.loadSerializedState();
+    }
 
     /**
      * Prime the forecaster with the input data
@@ -82,6 +98,18 @@ class RNNForecastingClassifier extends RNNForecastingModel {
             dates.add(date);
         }
         return dates;
+    }
+
+    public void clearPreviousState() {
+        m_model.clearPreviousState();
+    }
+
+    public void setPreviousState(List<Object> state) {
+        m_model.setPreviousState(state);
+    }
+
+    public List<Object> getPreviousState() {
+        return m_model.getPreviousState();
     }
 
     public List<String> getTargetFieldNames() {

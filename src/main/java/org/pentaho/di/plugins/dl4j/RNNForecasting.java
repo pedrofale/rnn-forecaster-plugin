@@ -23,10 +23,8 @@ import weka.core.Instances;
 import weka.core.SerializedObject;
 
 /**
- * Applies a pre-built weka model (classifier or clusterer) to incoming rows and
- * appends predictions. Predictions can be a label (classification/clustering),
- * a number (regression), or a probability distribution over classes/clusters.
- * <p>
+ * Applies a pre-built weka model (forecaster) to incoming rows and
+ * appends predictions. Predictions are numbers (regression).
  *
  * Attributes that the Weka model was constructed from are automatically mapped
  * to incoming Kettle fields on the basis of name and type. Any attributes that
@@ -36,7 +34,8 @@ import weka.core.SerializedObject;
  * been seen during the training of the Weka model are converted to missing
  * values.
  *
- * @author Mark Hall (mhall{[at]}pentaho{[dot]}org)
+ * @author Pedro Ferreira (pferreira{[at]}pentaho{[dot]}org)
+ * @version 1.0
  */
 public class RNNForecasting extends BaseStep implements StepInterface {
 
