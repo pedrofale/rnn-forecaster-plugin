@@ -5,6 +5,8 @@ package org.pentaho.di.plugins.dl4j;
  */
 
 import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 
@@ -174,8 +176,12 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
 
         RNNForecastingModel wfm = RNNForecastingModel.createScorer(model);
         wfm.setHeader(header);
-        wfm.loadBaseModel();
-        wfm.loadSerializedState();
+
+        Path p = Paths.get(modelFile);
+        String filename = p.getFileName().toString();
+
+        wfm.loadBaseModel(filename);
+        wfm.loadSerializedState(filename);
 
         return wfm;
     }

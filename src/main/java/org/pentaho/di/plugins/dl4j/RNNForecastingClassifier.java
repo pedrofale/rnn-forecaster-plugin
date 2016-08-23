@@ -62,15 +62,15 @@ class RNNForecastingClassifier extends RNNForecastingModel {
      * Set the base model
      *
      */
-    public void loadBaseModel() throws IOException {
-        m_model.loadBaseModel();
+    public void loadBaseModel(String filename) throws IOException {
+        m_model.loadBaseModel(filename);
     }
 
     /**
      * Set previously serialized RNN state
      */
-    public void loadSerializedState() throws Exception {
-        m_model.loadSerializedState();
+    public void loadSerializedState(String filename) throws Exception {
+        m_model.loadSerializedState(filename);
     }
 
     /**

@@ -79,12 +79,12 @@ public abstract class RNNForecastingModel implements Serializable {
     /**
      * Set the base model
      */
-    public abstract void loadBaseModel() throws IOException;
+    public abstract void loadBaseModel(String filename) throws IOException;
 
     /**
      * Set the serialized RNN state
      */
-    public abstract void loadSerializedState() throws Exception;
+    public abstract void loadSerializedState(String filename) throws Exception;
 
     public abstract List<String> getTargetFieldNames();
 
