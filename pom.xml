@@ -20,6 +20,7 @@
     <paxexamversion>4.1.0</paxexamversion>
     <dependency.pentaho.pentaho-xul-core.version>TRUNK-SNAPSHOT</dependency.pentaho.pentaho-xul-core.version>
     <nd4j.version>0.5.0</nd4j.version>
+    <dl4j.version>0.5.0</dl4j.version>
   </properties>
 
   <dependencies>
@@ -27,6 +28,11 @@
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-native</artifactId>
       <version>${nd4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.deeplearning4j</groupId>
+      <artifactId>deeplearning4j-core</artifactId>
+      <version>${dl4j.version}</version>
     </dependency>
     <dependency>
       <groupId>pentaho-kettle</groupId>
@@ -54,13 +60,13 @@
     </dependency>
     <dependency>
       <groupId>nz.ac.waikato.cms.weka</groupId>
-      <artifactId>weka-stable</artifactId>
-      <version>3.8.0</version>
+      <artifactId>timeseriesForecasting</artifactId>
+      <version>1.0.21-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>nz.ac.waikato.cms.weka</groupId>
-      <artifactId>timeseriesForecasting</artifactId>
-      <version>1.0.20</version>
+      <groupId>pedrofale</groupId>
+      <artifactId>wekaDl4j</artifactId>
+      <version>1.0</version>
     </dependency>
     <dependency>
         <groupId>org.yaml</groupId>
@@ -83,15 +89,38 @@
             <Bundle-Version>${project.version}</Bundle-Version>
             <Export-Package>org.pentaho.di.plugins.dl4j</Export-Package>
             <Import-Package>
-              org.apache.commons.vfs2, org.osgi.service.blueprint, org.eclipse.swt.*, org.pentaho.di.*, org.pentaho.di.core.*, org.pentaho.di.ui.*, org.pentaho.vfs.ui, org.w3c.dom, !weka.classifiers.evaluation, !weka.classifiers.timeseries, !weka.clusterers, !weka.core, !weka.core.pmml, !weka.core.xml, !weka.gui, !weka.filters.supervised.attribute
+              org.apache.commons.vfs2, org.osgi.service.blueprint, org.eclipse.swt.*, org.pentaho.di.*, org.pentaho.di.core.*, org.pentaho.di.ui.*, org.pentaho.vfs.ui, org.w3c.dom, weka.classifiers.evaluation, weka.classifiers.timeseries, weka.core, weka.core.xml, weka.gui, weka.filters.supervised.attribute
             </Import-Package>
-            <Embed-Dependency>
-              weka.classifiers.evaluation, weka.classifiers.timeseries, weka.clusterers, weka.core, weka.core.pmml, weka.core.xml, weka.gui, weka.filters.supervised.attribute
-            </Embed-Dependency>
           </instructions>
         </configuration>
       </plugin>
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-dependencies</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/lib/</outputDirectory>
+              <includeScope>runtime</includeScope>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>**/*.svg</include>
+          <include>**/*.png</include>
+          <include>**/*.properties</include>
+        </includes>
+      </resource>
+    </resources>
   </build>
 
 

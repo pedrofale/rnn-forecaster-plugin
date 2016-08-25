@@ -1,15 +1,9 @@
 package org.pentaho.di.plugins.dl4j;
 
-/**
- * Created by pedro on 08-08-2016.
- */
-
 import java.io.*;
 import java.util.*;
-import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.vfs2.FileObject;
-import org.pentaho.di.core.exception.KettleStepException;
 import org.pentaho.di.core.logging.LogChannelInterface;
 import org.pentaho.di.core.row.RowDataUtil;
 import org.pentaho.di.core.row.RowMetaInterface;
@@ -22,23 +16,17 @@ import org.pentaho.di.trans.step.BaseStepData;
 import org.pentaho.di.trans.step.StepDataInterface;
 
 import weka.classifiers.evaluation.NumericPrediction;
-import weka.classifiers.timeseries.WekaForecaster;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.Utils;
-import weka.core.pmml.PMMLFactory;
-import weka.core.pmml.PMMLModel;
-import weka.core.xml.XStream;
-import weka.filters.supervised.attribute.TSLagMaker;
-
-import javax.swing.*;
 
 /**
  * Holds temporary data and has routines for loading serialized models.
  *
- * @author Mark Hall (mhall{[at]}pentaho{[dot]}org)
+ * @author Pedro Ferreira (pferreira{[at]}pentaho{[dot]}org)
+ * @version 1.0
  */
 public class RNNForecastingData extends BaseStepData implements StepDataInterface {
 
@@ -173,6 +161,9 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
         RNNForecastingModel wfm = RNNForecastingModel.createScorer(model);
         wfm.setHeader(header);
 
+        wfm.loadBaseModel(modelFile);
+        wfm.loadSerializedState(modelFile);
+
         return wfm;
     }
 
@@ -253,8 +244,6 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
         return mappingIndexes;
     }
 
-    // TODO: instead of creating new fields, create new rows following the last input rows where the predictions will be sent to.
-    // TODO: receive as param the number of time steps forecasted
     /**
      * Generates a batch of predictions (more specifically, an array of output
      * rows containing all input Kettle fields plus new fields that hold the
@@ -269,23 +258,29 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
      * @exception Exception if an error occurs
      */
     public Object[][] generateForecast(RowMetaInterface inputMeta,
-                                          RowMetaInterface outputMeta, List<Object[]> inputRows,
-                                          RNNForecastingMeta meta) throws Exception {
-        int[] mappingIndexes = m_mappingIndexes;
+                                       RowMetaInterface outputMeta, List<Object[]> inputRows,
+                                       RNNForecastingMeta meta) throws Exception {
         RNNForecastingModel model = getModel(); // copy of the model for this copy of the step
-        model.getHeader().setClassIndex(0);
+        model.getHeader().setClassIndex(getClassIndexes(model)[0]);
 
         Instances batch = new Instances(model.getHeader(), inputRows.size());
         // loop through rows and make each one an Instance object, part of Instances
         for (Object[] r : inputRows) {
-            Instance inst = constructInstance(inputMeta, r, mappingIndexes, model,
-                    true);
+            Instance inst = constructInstance(inputMeta, r, m_mappingIndexes, model, true);
             batch.add(inst);
         }
-        model.primeForecaster(batch);
+
+        Instances primeData = new Instances(model.getHeader());
+        Instances overlayData = new Instances(model.getHeader());
+        for (Instance instance : batch) {
+            if (!instance.classIsMissing()) {
+                primeData.add(instance);
+            } else {
+                overlayData.add(instance);
+            }
+        }
 
         int[] targetIndexes = getTargetColumns(model, inputMeta);
-
         int dateIndex = 0;
         for (int i = 0; i < inputMeta.getFieldNames().length; i++) {
             if (batch.attribute(i).isDate())
@@ -300,21 +295,85 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
             }
         }
 
+        if (meta.getClearPreviousState()) {
+            model.clearPreviousState();
+        }
+
+        // Prime forecaster with historical enough data to create lagged variables
+        model.primeForecaster(primeData);
+
+        // Generate output rows. Operations differ if we are using overlay data
+        Object[][] result = null;
+        if (overlayData.numInstances() == 0) {
+            result = generateOutputRows(model, inputRows, outputMeta, meta, primeData, dateIndex,
+                    modelDateIndex, targetIndexes);
+        } else {
+            result = generateOverlayOutputRows(model, inputRows, outputMeta, primeData, overlayData,
+                    targetIndexes);
+        }
+        return result;
+    }
+
+    private Object[][] generateOutputRows(RNNForecastingModel model, List<Object[]> inputRows,
+                                          RowMetaInterface outputMeta, RNNForecastingMeta meta, Instances primeData,
+                                          int dateIndex, int modelDateIndex, int[] targetIndexes) throws Exception {
+
         int stepsToForecast = new Integer(meta.getStepsToForecast());
 
-        List<String> dates = model.getForecastDates(stepsToForecast, batch.lastInstance(), modelDateIndex);
+        // dates must be generated *before* forecasting
+        List<String> dates = model.getForecastDates(stepsToForecast, primeData.lastInstance(), modelDateIndex);
         List<List<NumericPrediction>> forecast = model.forecast(stepsToForecast);
 
         // Output rows
-        Object[][] result = new Object[stepsToForecast + inputRows.size()][model.getHeader().numAttributes()];
+        Object[][] result = new Object[stepsToForecast + primeData.numInstances()][model.getHeader().numAttributes()];
 
-        // First copy the input data to the output rows
+        // First copy the priming data to the output rows
+        for (int i = 0; i < primeData.numInstances(); i++) {
+            result[i] = RowDataUtil.resizeArray(inputRows.get(i), outputMeta.size());
+        }
+
+        // Now generate prediction rows
+        for (int i = 0; i < stepsToForecast; i++) {
+            result[i + primeData.numInstances()] = RowDataUtil.allocateRowData(outputMeta.size());
+            ValueMetaInterface newVM = new ValueMeta("string", ValueMetaInterface.TYPE_STRING);
+
+            List<NumericPrediction> prediction = forecast.get(i);
+
+            double[] predPerClass = classPredictions(prediction);
+            List<Double> predsDouble = new ArrayList<>(predPerClass.length);
+            List<String> preds = new ArrayList<>(predPerClass.length);
+
+            for (int j = 0; j < predPerClass.length; j++) {
+                predsDouble.add(predPerClass[j]);
+                preds.add(predsDouble.get(j).toString());
+                result[i + inputRows.size()][targetIndexes[j]] = newVM.convertToBinaryStringStorageType(preds.get(j));
+            }
+
+            result[i + primeData.numInstances()][dateIndex] = newVM.convertToBinaryStringStorageType(dates.get(i));
+        }
+
+        return result;
+    }
+
+    private Object[][] generateOverlayOutputRows(RNNForecastingModel model, List<Object[]> inputRows,
+                                          RowMetaInterface outputMeta, Instances primeData,
+                                          Instances overlayData, int[] targetIndexes) throws Exception {
+
+        overlayData.setClassIndex(-1);
+
+        int stepsToForecast = overlayData.numInstances();
+        List<List<NumericPrediction>> forecast = model.forecast(stepsToForecast, overlayData);
+
+        // Output rows
+        Object[][] result = new Object[stepsToForecast + primeData.numInstances()][model.getHeader().numAttributes()];
+
+        // First copy all the input data to the output rows
         for (int i = 0; i < inputRows.size(); i++) {
             result[i] = RowDataUtil.resizeArray(inputRows.get(i), outputMeta.size());
         }
-        // Now generate prediction rows
-        for (int i = 0; i < stepsToForecast; i++) {
-            result[i + inputRows.size()] = RowDataUtil.allocateRowData(outputMeta.size());
+
+        // Now populate the targets with predictions
+        for (int i = 0; i < overlayData.numInstances(); i++) {
             ValueMetaInterface newVM = new ValueMeta("string", ValueMetaInterface.TYPE_STRING);
 
             List<NumericPrediction> prediction = forecast.get(i);
@@ -325,15 +384,27 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
             for (int j = 0; j < predPerClass.length; j++) {
                 predsDouble.add(predPerClass[j]);
                 preds.add(predsDouble.get(j).toString());
-                result[i + inputRows.size()][targetIndexes[j]] = newVM.convertToBinaryStringStorageType(preds.get(j));
+                result[i + primeData.numInstances()][targetIndexes[j]] = newVM.convertToBinaryStringStorageType(preds.get(j));
             }
-            result[i + inputRows.size()][dateIndex] = newVM.convertToBinaryStringStorageType(dates.get(i));
         }
 
         return result;
     }
 
-    public int[] getTargetColumns(RNNForecastingModel model, RowMetaInterface inputMeta) {
+    private int[] getClassIndexes(RNNForecastingModel model) {
+        List<String> targetFieldNames = model.getTargetFieldNames();
+        int[] classIndexes = new int[targetFieldNames.size()];
+        for (int i = 0; i < targetFieldNames.size(); i++) {
+            for (int j = 0; j < targetFieldNames.size(); j++) {
+                if (model.getHeader().attribute(i).name().equalsIgnoreCase(targetFieldNames.get(j))) {
+                    classIndexes[i] = j;
+                }
+            }
+        }
+        return classIndexes;
+    }
+
+    private int[] getTargetColumns(RNNForecastingModel model, RowMetaInterface inputMeta) {
         List<String> targetFieldNames = model.getTargetFieldNames();
         int[] targetIndexes = new int[targetFieldNames.size()];
         String[] fieldNames = inputMeta.getFieldNames();
@@ -357,161 +428,6 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
 
         return predPerClass;
     }
-
-//    public Object[][] generatePredictions(RowMetaInterface inputMeta,
-//                                          RowMetaInterface outputMeta, List<Object[]> inputRows,
-//                                          RNNForecastingMeta meta) throws Exception {
-//
-//        int[] mappingIndexes = m_mappingIndexes;
-//        RNNForecastingModel model = getModel(); // copy of the model for this copy of
-//        // the step
-//        boolean outputProbs = meta.getOutputProbabilities();
-//        boolean supervised = model.isSupervisedLearningModel();
-//
-//        Attribute classAtt = null;
-//        if (supervised) {
-//            classAtt = model.getHeader().classAttribute();
-//        }
-//
-//        Instances batch = new Instances(model.getHeader(), inputRows.size());
-//        for (Object[] r : inputRows) {
-//            Instance inst = constructInstance(inputMeta, r, mappingIndexes, model,
-//                    true);
-//            batch.add(inst);
-//        }
-//
-//        double[][] preds = model.distributionsForInstances(batch);
-//
-//        Object[][] result = new Object[preds.length][];
-//        for (int i = 0; i < preds.length; i++) {
-//            // First copy the input data to the new result...
-//            Object[] resultRow = RowDataUtil.resizeArray(inputRows.get(i),
-//                    outputMeta.size());
-//            int index = inputMeta.size();
-//
-//            double[] prediction = preds[i];
-//
-//            if (prediction.length == 1 || !outputProbs) {
-//                if (supervised) {
-//                    if (classAtt.isNumeric()) {
-//                        Double newVal = new Double(prediction[0]);
-//                        resultRow[index++] = newVal;
-//                    } else {
-//                        int maxProb = Utils.maxIndex(prediction);
-//                        if (prediction[maxProb] > 0) {
-//                            String newVal = classAtt.value(maxProb);
-//                            resultRow[index++] = newVal;
-//                        } else {
-//                            String newVal = BaseMessages.getString(RNNForecastingMeta.PKG,
-//                                    "RNNForecastingData.Message.UnableToPredict"); //$NON-NLS-1$
-//                            resultRow[index++] = newVal;
-//                        }
-//                    }
-//                } else {
-//                    int maxProb = Utils.maxIndex(prediction);
-//                    if (prediction[maxProb] > 0) {
-//                        Double newVal = new Double(maxProb);
-//                        resultRow[index++] = newVal;
-//                    } else {
-//                        String newVal = BaseMessages.getString(RNNForecastingMeta.PKG,
-//                                "RNNForecastingData.Message.UnableToPredictCluster"); //$NON-NLS-1$
-//                        resultRow[index++] = newVal;
-//                    }
-//                }
-//            } else {
-//                // output probability distribution
-//                for (int j = 0; j < prediction.length; j++) {
-//                    Double newVal = new Double(prediction[j]);
-//                    resultRow[index++] = newVal;
-//                }
-//            }
-//
-//            result[i] = resultRow;
-//        }
-//
-//        return result;
-//    }
-
-    /**
-     * Generates a prediction (more specifically, an output row containing all
-     * input Kettle fields plus new fields that hold the prediction(s)) for an
-     * incoming Kettle row given a Weka model.
-     *
-     * @param inputMeta the meta data for the incoming rows
-     * @param outputMeta the meta data for the output rows
-     * @param inputRow the values of the incoming row
-     * @param meta meta data for this step
-     * @return a Kettle row containing all incoming fields along with new ones
-     *         that hold the prediction(s)
-     * @exception Exception if an error occurs
-     */
-//    public Object[] generatePrediction(RowMetaInterface inputMeta,
-//                                       RowMetaInterface outputMeta, Object[] inputRow, RNNForecastingMeta meta)
-//            throws Exception {
-//
-//        int[] mappingIndexes = m_mappingIndexes;
-//        RNNForecastingModel model = getModel();
-//        boolean outputProbs = meta.getOutputProbabilities();
-//        boolean supervised = model.isSupervisedLearningModel();
-//
-//        Attribute classAtt = null;
-//        if (supervised) {
-//            classAtt = model.getHeader().classAttribute();
-//        }
-//
-//        // need to construct an Instance to represent this
-//        // input row
-//        Instance toScore = constructInstance(inputMeta, inputRow, mappingIndexes,
-//                model, false);
-//        double[] prediction = model.distributionForInstance(toScore);
-//
-//        // Update the model??
-//        if (meta.getUpdateIncrementalModel() && model.isUpdateableModel()
-//                && !toScore.isMissing(toScore.classIndex())) {
-//            model.update(toScore);
-//        }
-//        // First copy the input data to the new result...
-//        Object[] resultRow = RowDataUtil.resizeArray(inputRow, outputMeta.size());
-//        int index = inputMeta.size();
-//
-//        // output for numeric class or discrete class value
-//        if (prediction.length == 1 || !outputProbs) {
-//            if (supervised) {
-//                if (classAtt.isNumeric()) {
-//                    Double newVal = new Double(prediction[0]);
-//                    resultRow[index++] = newVal;
-//                } else {
-//                    int maxProb = Utils.maxIndex(prediction);
-//                    if (prediction[maxProb] > 0) {
-//                        String newVal = classAtt.value(maxProb);
-//                        resultRow[index++] = newVal;
-//                    } else {
-//                        String newVal = BaseMessages.getString(RNNForecastingMeta.PKG,
-//                                "RNNForecastingData.Message.UnableToPredict"); //$NON-NLS-1$
-//                        resultRow[index++] = newVal;
-//                    }
-//                }
-//            } else {
-//                int maxProb = Utils.maxIndex(prediction);
-//                if (prediction[maxProb] > 0) {
-//                    Double newVal = new Double(maxProb);
-//                    resultRow[index++] = newVal;
-//                } else {
-//                    String newVal = BaseMessages.getString(RNNForecastingMeta.PKG,
-//                            "RNNForecastingData.Message.UnableToPredictCluster"); //$NON-NLS-1$
-//                    resultRow[index++] = newVal;
-//                }
-//            }
-//        } else {
-//            // output probability distribution
-//            for (int i = 0; i < prediction.length; i++) {
-//                Double newVal = new Double(prediction[i]);
-//                resultRow[index++] = newVal;
-//            }
-//        }
-//
-//        return resultRow;
-//    }
 
     /**
      * Helper method that constructs an Instance to input to the Weka model based

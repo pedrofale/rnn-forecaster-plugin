@@ -1,9 +1,5 @@
 package org.pentaho.di.plugins.dl4j;
 
-/**
- * Created by pedro on 08-08-2016.
- */
-
 import weka.classifiers.evaluation.NumericPrediction;
 import weka.classifiers.timeseries.WekaForecaster;
 import weka.core.Attribute;
@@ -12,13 +8,12 @@ import weka.core.Instances;
 import weka.filters.supervised.attribute.TSLagMaker;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
  * Subclass of RNNForecastingModel that encapsulates a WekaForecaster.
  *
- * @author  Mark Hall (mhall{[at]}pentaho.org)
+ * @author  Pedro Ferreira (pferreira{[at]}pentaho.org)
  * @version 1.0
  */
 
@@ -50,8 +45,22 @@ class RNNForecastingClassifier extends RNNForecastingModel {
      *
      * @return the Weka model as an object
      */
-    public Object getModel() {
+    public WekaForecaster getModel() {
         return m_model;
+    }
+
+    /**
+     * Set the base model
+     */
+    public void loadBaseModel(String filepath) throws Exception {
+        m_model.loadBaseModel(filepath);
+    }
+
+    /**
+     * Set previously serialized RNN state
+     */
+    public void loadSerializedState(String filepath) throws Exception {
+        m_model.loadSerializedState(filepath);
     }
 
     /**
@@ -81,6 +90,18 @@ class RNNForecastingClassifier extends RNNForecastingModel {
         return dates;
     }
 
+    public void clearPreviousState() {
+        m_model.clearPreviousState();
+    }
+
+    public void setPreviousState(List<Object> state) {
+        m_model.setPreviousState(state);
+    }
+
+    public List<Object> getPreviousState() {
+        return m_model.getPreviousState();
+    }
+
     public List<String> getTargetFieldNames() {
         String[] strArr = m_model.getOptions();
         String[] targetStrs = strArr[1].split(",");
@@ -92,6 +113,18 @@ class RNNForecastingClassifier extends RNNForecastingModel {
         return targetFields;
     }
 
+    /**
+     * Return a classification (number for regression problems
+     * or index of a class value for classification problems).
+     *
+     * @param numStepsToForecast number of steps to predict beyond training data
+     * @param overlay overlay input data to be used if model was trained with overlay attributes
+     * @return the predictions
+     * @exception Exception if an error occurs
+     */
+    public List<List<NumericPrediction>> forecast(int numStepsToForecast, Instances overlay) throws Exception {
+        return m_model.forecast(numStepsToForecast, overlay);
+    }
 
     /**
      * Return a classification (number for regression problems

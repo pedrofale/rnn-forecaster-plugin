@@ -1,10 +1,5 @@
 package org.pentaho.di.plugins.dl4j;
 
-/**
- * Created by pedro on 08-08-2016.
- */
-
-import org.apache.commons.vfs2.FileObject;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
@@ -25,22 +20,17 @@ import org.pentaho.di.core.Props;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
-import org.pentaho.di.core.vfs.KettleVFS;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.BaseStepMeta;
 import org.pentaho.di.trans.step.StepDialogInterface;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.ui.core.widget.TextVar;
-import org.pentaho.di.ui.spoon.Spoon;
 import org.pentaho.di.ui.trans.step.BaseStepDialog;
-import org.pentaho.vfs.ui.VfsFileChooserDialog;
 
 import weka.core.Attribute;
 import weka.core.Instances;
 import weka.core.xml.XStream;
-
-import java.io.Serializable;
 
 /**
  * The UI class for the RNNForecasting transform
@@ -76,8 +66,17 @@ public class RNNForecastingDialog extends BaseStepDialog implements
     /** Combines text field with widget to insert environment variable */
     private TextVar m_wFilename;
 
-    /** TextVar for batch sizes to be pushed to BatchPredictors */
+    /** TextVar for the number of time steps ahead to forecast */
     private TextVar m_stepsToForecastText;
+
+    /** label for the output probabilities check box */
+    private Label m_wClearPrevStateLab;
+
+    /** check box for output probabilities */
+    private Button m_wClearPrevState;
+
+    /** for the output probabilities check box */
+    private FormData m_fdlClearPrevState, m_fdClearPrevState;
 
     /** the text area for the model */
     private Text m_wModelText;
@@ -231,6 +230,23 @@ public class RNNForecastingDialog extends BaseStepDialog implements
         fdd.right = new FormAttachment(100, 0);
         m_stepsToForecastText.setLayoutData(fdd);
         m_stepsToForecastText.setEnabled(true);
+
+        m_wClearPrevStateLab = new Label(wFileComp, SWT.RIGHT);
+        m_wClearPrevStateLab.setText(BaseMessages.getString(RNNForecastingMeta.PKG,
+                "RNNForecastingDialog.ClearPrevState.Label")); //$NON-NLS-1$
+        props.setLook(m_wClearPrevStateLab);
+        m_fdlClearPrevState = new FormData();
+        m_fdlClearPrevState.left = new FormAttachment(0, 0);
+        m_fdlClearPrevState.top = new FormAttachment(m_stepsToForecastText, margin);
+        m_fdlClearPrevState.right = new FormAttachment(middle, -margin);
+        m_wClearPrevStateLab.setLayoutData(m_fdlClearPrevState);
+        m_wClearPrevState = new Button(wFileComp, SWT.CHECK);
+        props.setLook(m_wClearPrevState);
+        m_fdClearPrevState = new FormData();
+        m_fdClearPrevState.left = new FormAttachment(middle, 0);
+        m_fdClearPrevState.top = new FormAttachment(m_stepsToForecastText, margin);
+        m_fdClearPrevState.right = new FormAttachment(100, 0);
+        m_wClearPrevState.setLayoutData(m_fdClearPrevState);
 
         m_fdFileComp = new FormData();
         m_fdFileComp.left = new FormAttachment(0, 0);
@@ -607,8 +623,9 @@ public class RNNForecastingDialog extends BaseStepDialog implements
             m_stepsToForecastText.setText(m_currentMeta.getStepsToForecast());
         }
 
-        // Grab model if it is available (and we are not reading model file
-        // names from a field in the incoming data
+        m_wClearPrevState.setSelection(m_currentMeta.getClearPreviousState());
+
+        // Grab model if it is available
         RNNForecastingModel tempM = m_currentMeta.getModel();
         if (tempM != null) {
             m_wModelText.setText(tempM.toString());
@@ -619,7 +636,8 @@ public class RNNForecastingDialog extends BaseStepDialog implements
             // try loading the model
             loadModel();
         }
-        // }
+
+
     }
 
     private void cancel() {
@@ -649,6 +667,8 @@ public class RNNForecastingDialog extends BaseStepDialog implements
         if (!Const.isEmpty(m_stepsToForecastText.getText())) {
             m_currentMeta.setStepsToForecast(m_stepsToForecastText.getText());
         }
+
+        m_currentMeta.setClearPreviousState(m_wClearPrevState.getSelection());
 
         if (!m_originalMeta.equals(m_currentMeta)) {
             m_currentMeta.setChanged();

@@ -1,9 +1,5 @@
 package org.pentaho.di.plugins.dl4j;
 
-/**
- * Created by pedro on 08-08-2016.
-*/
-
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -20,13 +16,9 @@ import org.pentaho.di.core.Counter;
 import org.pentaho.di.core.annotations.Step;
 import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.exception.KettleException;
-import org.pentaho.di.core.exception.KettlePluginException;
 import org.pentaho.di.core.exception.KettleStepException;
 import org.pentaho.di.core.exception.KettleXMLException;
 import org.pentaho.di.core.row.RowMetaInterface;
-import org.pentaho.di.core.row.ValueMeta;
-import org.pentaho.di.core.row.ValueMetaInterface;
-import org.pentaho.di.core.row.value.ValueMetaFactory;
 import org.pentaho.di.core.variables.VariableSpace;
 import org.pentaho.di.core.variables.Variables;
 import org.pentaho.di.core.xml.XMLHandler;
@@ -43,15 +35,15 @@ import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
 import org.w3c.dom.Node;
 
-import weka.core.Instances;
 import weka.core.SerializedObject;
 
 /**
  * Contains the meta data for the RNNForecasting step.
  *
- * @author Mark Hall (mhall{[at]}pentaho{[dot]}org)
+ * @author Pedro Ferreira (pferreira{[at]}pentaho{[dot]}org)
+ * @version 1.0
  */
-@Step(id = "RNNForecasting", image = "WEKAS.svg", name = "RNN Forecasting",
+@Step(id = "RNNForecasting", image = "rnnforecaster.svg", name = "RNN Forecasting",
         description = "Appends predictions from a pre-built RNN model in Weka", categoryDescription = "Data Mining",
         documentationUrl = "http://wiki.pentaho.com/display/DATAMINING/Using+the+Weka+Scoring+Plugin")
 public class RNNForecastingMeta extends BaseStepMeta implements StepMetaInterface {
@@ -69,10 +61,13 @@ public class RNNForecastingMeta extends BaseStepMeta implements StepMetaInterfac
     private String m_stepsToForecast;
     public static final int DEFAULT_steps_to_forecast = 1;
 
+    /**
+     *  Whether to clear previous RNN state
+     */
+    private boolean m_clearPrevState;
+
     /** Holds the actual Weka model (forecaster) */
     private RNNForecastingModel m_model;
-
-
 
     /**
      * Set the number of time steps to forecast
@@ -108,6 +103,20 @@ public class RNNForecastingMeta extends BaseStepMeta implements StepMetaInterfac
      */
     public String getSerializedModelFileName() {
         return m_modelFileName;
+    }
+
+    /**
+     * Set whether to clear previous RNN state or not
+     */
+    public void setClearPreviousState(boolean clearPreviousState) {
+        m_clearPrevState = clearPreviousState;
+    }
+
+    /**
+     * Set whether to clear previous RNN state or not
+     */
+    public boolean getClearPreviousState() {
+        return m_clearPrevState;
     }
 
     /**
@@ -379,20 +388,6 @@ public class RNNForecastingMeta extends BaseStepMeta implements StepMetaInterfac
                 success = false;
             }
         }
-
-        // check the model status. If no model and we have
-        // a file name, try and load here. Otherwise, loading
-        // wont occur until the transformation starts or the
-        // user opens the configuration gui in Spoon. This affects
-        // the result of the getFields method and has an impact
-        // on downstream steps that need to know what we produce
-    /*
-     * RNNForecastingModel temp = (m_fileNameFromField) ? m_defaultModel : m_model;
-     * if (temp == null && !Const.isEmpty(m_modelFileName)) { try {
-     * loadModelFile(); } catch (Exception ex) { throw new
-     * KettleException(BaseMessages.getString(PKG,
-     * "RNNForecasting.Error.ProblemDeserializingModel"), ex); //$NON-NLS-1$ } }
-     */
     }
 
     /**
