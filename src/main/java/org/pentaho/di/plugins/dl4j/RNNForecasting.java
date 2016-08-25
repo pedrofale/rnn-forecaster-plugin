@@ -1,14 +1,10 @@
 package org.pentaho.di.plugins.dl4j;
 
-/**
- * Created by pedro on 08-08-2016.
- */
 import java.util.ArrayList;
 import java.util.List;
 
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleException;
-import org.pentaho.di.core.row.ValueMeta;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransMeta;
@@ -23,7 +19,7 @@ import weka.core.Instances;
 import weka.core.SerializedObject;
 
 /**
- * Applies a pre-built weka model (forecaster) to incoming rows and
+ * Applies a pre-built Weka model (forecaster) to incoming rows and
  * appends predictions. Predictions are numbers (regression).
  *
  * Attributes that the Weka model was constructed from are automatically mapped
@@ -43,7 +39,6 @@ public class RNNForecasting extends BaseStep implements StepInterface {
     private RNNForecastingData m_data;
 
     /** size of the batches of rows to be scored if the model is a batch scorer */
-    private int m_batchScoringSize = RNNForecastingMeta.DEFAULT_steps_to_forecast;
     private List<Object[]> m_batch;
 
     /**
@@ -62,18 +57,6 @@ public class RNNForecasting extends BaseStep implements StepInterface {
 
     private RNNForecastingModel setModel(String modelFileName)
             throws KettleException {
-
-    /*
-     * String modName = environmentSubstitute(modelFileName); File modelFile =
-     * null; if (modName.startsWith("file:")) { //$NON-NLS-1$ try { modName =
-     * modName.replace(" ", "%20"); //$NON-NLS-1$ //$NON-NLS-2$ modelFile = new
-     * File(new java.net.URI(modName)); } catch (Exception ex) { throw new
-     * KettleException(BaseMessages.getString(RNNForecastingMeta.PKG,
-     * "RNNForecasting.Error.MalformedURIForModelFile"), ex); //$NON-NLS-1$ } }
-     * else { modelFile = new File(modName); } if (!modelFile.exists()) { throw
-     * new KettleException(BaseMessages.getString(RNNForecastingMeta.PKG,
-     * "RNNForecasting.Error.NonExistentModelFile", modName)); //$NON-NLS-1$ }
-     */
 
         // Load the model
         RNNForecastingModel model = null;
@@ -166,7 +149,6 @@ public class RNNForecasting extends BaseStep implements StepInterface {
             if (!Const.isEmpty(m_meta.getStepsToForecast())) {
                 try {
                     String stf = environmentSubstitute(m_meta.getStepsToForecast());
-                    m_batchScoringSize = Integer.parseInt(stf);
                 } catch (NumberFormatException ex) {
                     String modelPreferred = environmentSubstitute(((BatchPredictor) m_meta
                             .getModel().getModel()).getBatchSize());
@@ -177,7 +159,6 @@ public class RNNForecasting extends BaseStep implements StepInterface {
                                 "RNNForecasting.Message.UnableToParseBatchScoringSize", //$NON-NLS-1$
                                 modelPreferred));
                         try {
-                            m_batchScoringSize = Integer.parseInt(modelPreferred);
                             sizeOk = true;
                         } catch (NumberFormatException e) {
                         }
@@ -187,8 +168,6 @@ public class RNNForecasting extends BaseStep implements StepInterface {
                         logBasic(BaseMessages.getString(RNNForecastingMeta.PKG,
                                 "RNNForecasting.Message.UnableToParseBatchScoringSizeDefault", //$NON-NLS-1$
                                 RNNForecastingMeta.DEFAULT_steps_to_forecast));
-
-                        m_batchScoringSize = RNNForecastingMeta.DEFAULT_steps_to_forecast;
                     }
                 }
             }

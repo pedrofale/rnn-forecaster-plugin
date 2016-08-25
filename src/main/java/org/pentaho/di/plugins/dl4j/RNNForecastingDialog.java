@@ -1,10 +1,5 @@
 package org.pentaho.di.plugins.dl4j;
 
-/**
- * Created by pedro on 08-08-2016.
- */
-
-import org.apache.commons.vfs2.FileObject;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
@@ -25,22 +20,17 @@ import org.pentaho.di.core.Props;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
-import org.pentaho.di.core.vfs.KettleVFS;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.BaseStepMeta;
 import org.pentaho.di.trans.step.StepDialogInterface;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.ui.core.widget.TextVar;
-import org.pentaho.di.ui.spoon.Spoon;
 import org.pentaho.di.ui.trans.step.BaseStepDialog;
-import org.pentaho.vfs.ui.VfsFileChooserDialog;
 
 import weka.core.Attribute;
 import weka.core.Instances;
 import weka.core.xml.XStream;
-
-import java.io.Serializable;
 
 /**
  * The UI class for the RNNForecasting transform

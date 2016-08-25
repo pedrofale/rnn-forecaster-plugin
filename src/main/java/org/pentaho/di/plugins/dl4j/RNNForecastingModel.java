@@ -1,13 +1,6 @@
 package org.pentaho.di.plugins.dl4j;
 
-/**
- * Created by pedro on 08-08-2016.
- */
-
-import java.io.IOException;
 import java.io.Serializable;
-import java.security.spec.ECField;
-import java.util.Date;
 import java.util.List;
 
 import weka.classifiers.evaluation.NumericPrediction;
@@ -79,7 +72,7 @@ public abstract class RNNForecastingModel implements Serializable {
     /**
      * Set the base model
      */
-    public abstract void loadBaseModel(String filename) throws IOException;
+    public abstract void loadBaseModel(String filename) throws Exception;
 
     /**
      * Set the serialized RNN state

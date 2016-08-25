@@ -1,28 +1,19 @@
 package org.pentaho.di.plugins.dl4j;
 
-/**
- * Created by pedro on 08-08-2016.
- */
-
 import weka.classifiers.evaluation.NumericPrediction;
 import weka.classifiers.timeseries.WekaForecaster;
-import weka.classifiers.timeseries.core.OverlayForecaster;
-import weka.classifiers.timeseries.core.StateDependentPredictor;
 import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.filters.supervised.attribute.TSLagMaker;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
  * Subclass of RNNForecastingModel that encapsulates a WekaForecaster.
  *
- * @author  Mark Hall (mhall{[at]}pentaho.org)
+ * @author  Pedro Ferreira (pferreira{[at]}pentaho.org)
  * @version 1.0
  */
 
@@ -60,17 +51,16 @@ class RNNForecastingClassifier extends RNNForecastingModel {
 
     /**
      * Set the base model
-     *
      */
-    public void loadBaseModel(String filename) throws IOException {
-        m_model.loadBaseModel(filename);
+    public void loadBaseModel(String filepath) throws Exception {
+        m_model.loadBaseModel(filepath);
     }
 
     /**
      * Set previously serialized RNN state
      */
-    public void loadSerializedState(String filename) throws Exception {
-        m_model.loadSerializedState(filename);
+    public void loadSerializedState(String filepath) throws Exception {
+        m_model.loadSerializedState(filepath);
     }
 
     /**
