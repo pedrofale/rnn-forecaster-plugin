@@ -74,6 +74,13 @@ class RNNForecastingClassifier extends RNNForecastingModel {
         m_model.primeForecaster(batch);
     }
 
+    /**
+     * Get the dates for the time steps to forecast
+     *
+     * @param stepsToForecast the number of predictions to be made
+     * @return prediction for each future time step
+     * @throws Exception if a problem occurs
+     */
     public List<String> getForecastDates(int stepsToForecast,
                                          Instance lastInst, int dateIndex) throws Exception {
 
@@ -139,9 +146,9 @@ class RNNForecastingClassifier extends RNNForecastingModel {
     }
 
     /**
-     * Returns the textual description of the WekaForecaster's model.
+     * Returns the textual description of the WekaForecaster model.
      *
-     * @return the WekaForecaster's model as a String
+     * @return the WekaForecaster model as a String
      */
     public String toString() {
         return m_model.toString();

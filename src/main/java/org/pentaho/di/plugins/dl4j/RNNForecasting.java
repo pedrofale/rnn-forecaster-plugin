@@ -120,6 +120,7 @@ public class RNNForecasting extends BaseStep implements StepInterface {
                 }
 
                 setModel(m_meta.getSerializedModelFileName());
+
             } else if (m_meta.getModel() != null) {
                 // copy the primary model over to the data class
                 try {
@@ -143,8 +144,7 @@ public class RNNForecasting extends BaseStep implements StepInterface {
             }
 
             // Determine the output format
-            m_meta.getFields(m_data.getOutputRowMeta(), getStepname(), null, null,
-                    this);
+            m_meta.getFields(m_data.getOutputRowMeta(), getStepname(), null, null, this);
 
             if (!Const.isEmpty(m_meta.getStepsToForecast())) {
                 try {
@@ -156,7 +156,7 @@ public class RNNForecasting extends BaseStep implements StepInterface {
                     boolean sizeOk = false;
                     if (!Const.isEmpty(modelPreferred)) {
                         logBasic(BaseMessages.getString(RNNForecastingMeta.PKG,
-                                "RNNForecasting.Message.UnableToParseBatchScoringSize", //$NON-NLS-1$
+                                "RNNForecasting.Message.UnableToParseStepsToForecast", //$NON-NLS-1$
                                 modelPreferred));
                         try {
                             sizeOk = true;
@@ -166,7 +166,7 @@ public class RNNForecasting extends BaseStep implements StepInterface {
 
                     if (!sizeOk) {
                         logBasic(BaseMessages.getString(RNNForecastingMeta.PKG,
-                                "RNNForecasting.Message.UnableToParseBatchScoringSizeDefault", //$NON-NLS-1$
+                                "RNNForecasting.Message.UnableToParseStepsToForecastDefault", //$NON-NLS-1$
                                 RNNForecastingMeta.DEFAULT_steps_to_forecast));
                     }
                 }

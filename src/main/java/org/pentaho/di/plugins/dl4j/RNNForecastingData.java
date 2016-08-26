@@ -46,7 +46,7 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
     private double[] m_vals = null;
 
     /**
-     * Holds the actual Weka model (classifier, clusterer or PMML) used by this
+     * Holds the actual forecaster model (WekaForecaster) used by this
      * copy of the step
      */
     protected RNNForecastingModel m_model;
@@ -121,8 +121,7 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
     }
 
     /**
-     * Loads a serialized model. Models can either be binary serialized Java
-     * objects, objects deep-serialized to xml, or PMML.
+     * Loads a binary serialized Java object containing the forecaster
      *
      * @param modelFile a <code>File</code> value
      * @return the model
@@ -313,6 +312,7 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
         }
         return result;
     }
+
 
     private Object[][] generateOutputRows(RNNForecastingModel model, List<Object[]> inputRows,
                                           RowMetaInterface outputMeta, RNNForecastingMeta meta, Instances primeData,

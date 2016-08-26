@@ -9,8 +9,8 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 /**
- * Abstract wrapper class for a Weka model. Provides a unified interface to
- * obtaining predictions. Subclasses (RNNForecastingClassifer) encapsulate the actual weka models.
+ * Abstract wrapper class for a forecaster model. Provides a unified interface to
+ * obtaining predictions. Subclasses (RNNForecastingClassifer) encapsulate the actual weka forecaster models.
  *
  * @author Pedro Ferreira (pferreira{[at]}pentaho{[dot]}org)
  * @version 1.0
@@ -48,7 +48,7 @@ public abstract class RNNForecastingModel implements Serializable {
     }
 
     /**
-     * Tell the model that this scoring run is finished.
+     * Tell the model that this forecasting run is finished.
      */
     public void done() {
         // subclasses override if they need to do
@@ -79,18 +79,26 @@ public abstract class RNNForecastingModel implements Serializable {
      */
     public abstract void loadSerializedState(String filename) throws Exception;
 
+    /**
+     * Get the names of the forecasting targets
+     */
     public abstract List<String> getTargetFieldNames();
 
     /**
      * Prime the forecaster with the input data
      *
-     * @param batch the number of predictions to be made
+     * @param batch the historical data needed by the forecaster
+     * @throws Exception if a problem occurs
+     */
+    public abstract void primeForecaster(Instances batch) throws Exception;
+
+    /**
+     * Get the dates for the time steps to forecast
+     *
+     * @param stepsToForecast the number of predictions to be made
      * @return prediction for each future time step
      * @throws Exception if a problem occurs
      */
-    public abstract void primeForecaster(Instances batch)
-            throws Exception;
-
     public abstract List<String> getForecastDates(int stepsToForecast,
                                                          Instance lastInst, int dateIndex) throws Exception;
 
@@ -126,7 +134,7 @@ public abstract class RNNForecastingModel implements Serializable {
      * Static factory method to create an instance of an appropriate subclass of
      * RNNForecastingModel given a Weka model.
      *
-     * @param model a Weka model
+     * @param model a forecasting Weka model
      * @return an appropriate RNNForecastingModel for this type of Weka model
      * @exception Exception if an error occurs
      */

@@ -304,20 +304,6 @@ public class RNNForecastingMeta extends BaseStepMeta implements StepMetaInterfac
                 m_modelFileName = XMLHandler.getTagValue(wekanode, "model_file_name"); //$NON-NLS-1$
             }
         }
-
-        // check the model status. If no model and we have
-        // a file name, try and load here. Otherwise, loading
-        // wont occur until the transformation starts or the
-        // user opens the configuration gui in Spoon. This affects
-        // the result of the getFields method and has an impact
-        // on downstream steps that need to know what we produce
-    /*
-     * RNNForecastingModel temp = (m_fileNameFromField) ? m_defaultModel : m_model;
-     * if (temp == null && !Const.isEmpty(m_modelFileName)) { try {
-     * loadModelFile(); } catch (Exception ex) { throw new
-     * KettleXMLException(BaseMessages.getString(PKG,
-     * "RNNForecasting.Error.ProblemDeserializingModel"), ex); //$NON-NLS-1$ } }
-     */
     }
 
     protected void loadModelFile() throws Exception {
@@ -372,7 +358,7 @@ public class RNNForecastingMeta extends BaseStepMeta implements StepMetaInterfac
             // try and get the model itself...
             try {
                 String base64XMLModel = rep.getStepAttributeString(id_step, 0,
-                        "weka_scoring_model"); //$NON-NLS-1$
+                        "rnn_forecasting_model"); //$NON-NLS-1$
                 logDebug(BaseMessages.getString(PKG, "RNNForecastingMeta.Log.SizeOfModel") //$NON-NLS-1$
                         + " " + base64XMLModel.length()); //$NON-NLS-1$
 
@@ -424,7 +410,7 @@ public class RNNForecastingMeta extends BaseStepMeta implements StepMetaInterfac
                 logDebug("Serializing " + modType + " model."); //$NON-NLS-1$ //$NON-NLS-2$
 
                 rep.saveStepAttribute(id_transformation, id_step, 0,
-                        "weka_scoring_model", base64XMLModel); //$NON-NLS-1$
+                        "rnn_forecasting_model", base64XMLModel); //$NON-NLS-1$
                 oo.close();
             } catch (Exception ex) {
                 logError(BaseMessages.getString(PKG,
