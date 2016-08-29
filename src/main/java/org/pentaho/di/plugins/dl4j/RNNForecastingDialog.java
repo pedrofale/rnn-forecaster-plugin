@@ -153,7 +153,7 @@ public class RNNForecastingDialog extends BaseStepDialog implements
         props.setLook(m_wStepname);
         m_wStepname.addModifyListener(lsMod);
 
-        // format the text field
+        // Format the text field
         m_fdStepname = new FormData();
         m_fdStepname.left = new FormAttachment(middle, 0);
         m_fdStepname.top = new FormAttachment(0, margin);
@@ -212,7 +212,7 @@ public class RNNForecastingDialog extends BaseStepDialog implements
         // number of steps to forecast line
         Label stepsLab = new Label(wFileComp, SWT.RIGHT);
         stepsLab.setText(BaseMessages.getString(RNNForecastingMeta.PKG,
-                "RNNForecastindDialog.StepsToForecast.Label")); //$NON-NLS-1$
+                "RNNForecastingDialog.StepsToForecast.Label")); //$NON-NLS-1$
         props.setLook(stepsLab);
         FormData fdd = new FormData();
         fdd.left = new FormAttachment(0, 0);
@@ -468,8 +468,11 @@ public class RNNForecastingDialog extends BaseStepDialog implements
         return stepname;
     }
 
+
     /**
      * Load the model.
+     *
+     * @return true if the model was successfully loaded
      */
     private boolean loadModel() {
         String filename = m_wFilename.getText();
@@ -479,7 +482,6 @@ public class RNNForecastingDialog extends BaseStepDialog implements
 
         boolean success = false;
 
-        // if (!Const.isEmpty(filename) && modelFile.exists()) {
         try {
             if (!Const.isEmpty(filename)
                     && RNNForecastingData.modelFileExists(filename, transMeta)) {

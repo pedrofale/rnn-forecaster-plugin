@@ -19,8 +19,8 @@
   <properties>
     <paxexamversion>4.1.0</paxexamversion>
     <dependency.pentaho.pentaho-xul-core.version>TRUNK-SNAPSHOT</dependency.pentaho.pentaho-xul-core.version>
-    <nd4j.version>0.5.0</nd4j.version>
-    <dl4j.version>0.5.0</dl4j.version>
+    <nd4j.version>0.4-rc3.9</nd4j.version>
+    <dl4j.version>0.4-rc3.9</dl4j.version>
   </properties>
 
   <dependencies>
