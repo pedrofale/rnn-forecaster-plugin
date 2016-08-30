@@ -70,6 +70,13 @@ public abstract class RNNForecastingModel implements Serializable {
     public abstract Object getModel();
 
     /**
+     * Check if the base learner is an RNN
+     *
+     * @return true if the base learner is an RNN
+     */
+    public abstract boolean isRNN();
+
+    /**
      * Set the base model
      */
     public abstract void loadBaseModel(String filename) throws Exception;
@@ -138,7 +145,7 @@ public abstract class RNNForecastingModel implements Serializable {
      * @return an appropriate RNNForecastingModel for this type of Weka model
      * @exception Exception if an error occurs
      */
-    public static RNNForecastingModel createScorer(Object model) throws Exception {
+    public static RNNForecastingModel createForecaster(Object model) throws Exception {
         if (model instanceof WekaForecaster) {
             return new RNNForecastingClassifier(model);
         }

@@ -4,6 +4,8 @@ import java.io.*;
 import java.util.*;
 
 import org.apache.commons.vfs2.FileObject;
+import org.pentaho.di.core.exception.KettleException;
+import org.pentaho.di.core.exception.KettleStepException;
 import org.pentaho.di.core.logging.LogChannelInterface;
 import org.pentaho.di.core.row.RowDataUtil;
 import org.pentaho.di.core.row.RowMetaInterface;
@@ -157,11 +159,16 @@ public class RNNForecastingData extends BaseStepData implements StepDataInterfac
 
         oi.close();
 
-        RNNForecastingModel wfm = RNNForecastingModel.createScorer(model);
-        wfm.setHeader(header);
+        RNNForecastingModel wfm = RNNForecastingModel.createForecaster(model);
 
-        wfm.loadBaseModel(modelFile);
-        wfm.loadSerializedState(modelFile);
+        if (wfm.isRNN()) {
+            wfm.setHeader(header);
+            wfm.loadBaseModel(modelFile);
+            wfm.loadSerializedState(modelFile);
+        } else {
+            throw new KettleStepException(BaseMessages.getString(RNNForecastingMeta.PKG,
+                    "RNNForecasting.Error.ModelNotRNN"));
+        }
 
         return wfm;
     }

@@ -1,5 +1,6 @@
 package org.pentaho.di.plugins.dl4j;
 
+import weka.classifiers.Classifier;
 import weka.classifiers.evaluation.NumericPrediction;
 import weka.classifiers.timeseries.WekaForecaster;
 import weka.core.Attribute;
@@ -47,6 +48,15 @@ class RNNForecastingClassifier extends RNNForecastingModel {
      */
     public WekaForecaster getModel() {
         return m_model;
+    }
+
+    /**
+     * Check if the base learner is an RNN
+     *
+     * @return true if the base learner is an RNN
+     */
+    public boolean isRNN() {
+        return m_model.getAlgorithmName().contains("Dl4jRNNForecaster");
     }
 
     /**
